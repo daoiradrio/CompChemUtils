@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from typing import Union
 from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple
 
 
@@ -13,22 +14,31 @@ class Structure:
         # FIND BETTER DATASTRUCTURE FOR CONNECTIVITY
         self.bonds = None
         if filepath:
-            self.compute_structure(filepath)
+            self.structure_from_xyzfile(filepath)
     
 
-    def compute_structure(self, filepath: str) -> None:
+    def structure_from_xyzfile(self, filepath: str) -> None:
         if not os.path.exists(filepath):
             print()
             print("****************** WARNING ********************")
             print("STRUCTURE MODULE: File not found at given path.")
             print("***********************************************")
             return
-        self.read_xyz(filepath)
+        self.read_xyz_file(filepath)
         self.__compute_connectivity()
     
 
-    def read_xyz(self, filepath: str):
+    def comp_structure(self, elems: Union[list, np.array], coords: np.array):
+        if not type(elems) == list:
+            elems = list(elems)
+        self.elems = elems
+        self.coords = coords
+        self.__compute_connectivity()
+
+
+    def read_xyz_file(self, filepath: str):
         self.elems = list(np.loadtxt(filepath, skiprows=2, usecols=0, dtype=str))
+        self.natoms = len(self.elems)
         self.coords = np.loadtxt(filepath, skiprows=2, usecols=(1,2,3))
         self.natoms = len(self.elems)
     
@@ -48,6 +58,7 @@ class Structure:
                     self.bonds[j].append(i)
     
 
+    # EXTEND TO BOND ORDERS 2 AND 3
     def __compute_bond_order(self, elem1: str, coord1: np.array, elem2: str, coord2: np.array) -> int:
         tol = 0.08
         bond_order = 0
@@ -55,13 +66,14 @@ class Structure:
         single_bond = covalence_radii_single[elem1] + covalence_radii_single[elem2]
         if d <= (single_bond + tol):
                 bond_order = 1
-        if not elem1 == "H" and not elem2 == "H":
-            double_bond = covalence_radii_double[elem1] + covalence_radii_double[elem2]
-            triple_bond = covalence_radii_triple[elem1] + covalence_radii_triple[elem2]
-            if d <= (triple_bond + tol):
-                bond_order = 3
-            elif d <= (double_bond + tol):
-                bond_order = 2
+        # CRASHES IF ELEMENTS DO NOT HAVE COVALENCE RADII FOR DOUBLE AND TRIPLE BONDS
+        #if not elem1 == "H" and not elem2 == "H":
+        #    double_bond = covalence_radii_double[elem1] + covalence_radii_double[elem2]
+        #    triple_bond = covalence_radii_triple[elem1] + covalence_radii_triple[elem2]
+        #    if d <= (triple_bond + tol):
+        #        bond_order = 3
+        #    elif d <= (double_bond + tol):
+        #        bond_order = 2
         return bond_order
     
 
