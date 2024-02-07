@@ -1,24 +1,30 @@
 import numpy as np
-
 from queue import Queue
-from structure import Structure
-
-from visual import printmat, printvec
+from CompChemUtils.structure import Structure
 
 
 
+# ADD HUNGARIAN RMSD AND RESOLVE EDGE CASES WHERE THE ALGORITHM GETS STUCK AT THE WRONG ASSIGNMENT DUE TO SYMMETRY
 class RMSD():
 
     def __init__(self):
         pass
 
 
+    def rmsd(self, mol1: Structure, mol2: Structure) -> float:
+        Rmat = self.kabsch(mol1.coords, mol2.coords)
+        coords2 = np.dot(Rmat, mol2.coords.T).T
+        return np.sqrt(np.mean(np.linalg.norm(mol1.coords1 - coords2, axis=1)**2))
+
+
     def tight_rmsd(self, mol1: Structure, mol2: Structure) -> float:
-        self.match_coords(mol1, mol2)
+        coords1, coords2 = self.match_coords(mol1, mol2)
+        Rmat = self.kabsch(coords1, coords2)
+        coords2 = np.dot(Rmat, coords2.T).T
+        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
+        
 
-
-    # ADJUST SO THAT IT RETURN ROTATION MATRIX AND THEN MAKE IT ACCESSIBLE FOR USER
-    def __kabsch(self, coords1: np.array, coords2: np.array) -> tuple:
+    def kabsch(self, coords1: np.array, coords2: np.array) -> tuple:
         center1 = np.mean(coords1, axis=0)
         center2 = np.mean(coords2, axis=0)
         coords1 -= center1
@@ -36,9 +42,7 @@ class RMSD():
             [0, 0, det]
         ])
         R = np.matmul(np.matmul(Vt.T, matrix), U.T)
-        for i, _ in enumerate(coords2):
-            coords2[i] = np.matmul(coords2[i], R)
-        return coords1, coords2
+        return R.T
 
 
     def __spheres(self, connectivity: dict, elems: list, firstatomi: int) -> list:
@@ -71,6 +75,8 @@ class RMSD():
 
     def match_coords(self, mol1: Structure, mol2: Structure) -> tuple:
         pairs = {}
+        assigned1 = [0] * mol1.natoms
+        assigned2 = [0] * mol2.natoms
         matchedcoords1 = []
         matchedcoords2 = []
         spheres1 = {atomi: self.__spheres(mol1.bonds, mol1.elems, atomi) for atomi in range(mol1.natoms)}
@@ -87,15 +93,33 @@ class RMSD():
             elif len(eqs) == 1:
                 matchedcoords1.append(mol1.coords[atomi])
                 matchedcoords2.append(mol2.coords[eqs[0]])
+                assigned1[atomi] = 1
+                assigned2[eqs[0]] = 1
             else:
-                print("*** WARNING ***")
-                print(print("RMSD MODULE: Molecules seems to be different."))
+                print()
+                print("***************** WARNING *******************")
+                print("RMSD MODULE: Molecules seem to be different.")
+                print("*********************************************")
+                print()
                 return mol1.coords, mol2.coords
         matchedcoords1 = np.array(matchedcoords1)
         matchedcoords2 = np.array(matchedcoords2)
-        #if matchedcoords1.shape[0] == mol1.natoms and matchedcoords2.shape[0] == mol2.natoms:
-        #    return matchedcoords1, matchedcoords2
-        for curratomi, eq_atoms in pairs.items():
-            dref = np.zeros((matchedcoords1.shape[0], len(eq_atoms)))
+        if matchedcoords1.shape[0] == mol1.natoms and matchedcoords2.shape[0] == mol2.natoms:
+            return matchedcoords1, matchedcoords2
+        for curratomi, eqatoms in pairs.items():
+            if assigned1[curratomi]:
+                continue
+            dref = np.zeros((matchedcoords1.shape[0], len(eqatoms)))
             dref.T[:,:] = np.linalg.norm(matchedcoords1 - mol1.coords[curratomi], axis=1)
-            #d = np.zeros((matchedcoords2.shape[0], len(eq_atoms)))
+            d = np.zeros((matchedcoords2.shape[0], len(eqatoms)))
+            for col, eqatomi in enumerate(eqatoms):
+                if assigned2[eqatomi]:
+                    continue
+                d[:,col] = np.linalg.norm(matchedcoords1 - mol2.coords[eqatomi], axis=1)
+            minatomi = np.argmin(np.linalg.norm(dref - d, axis=0))
+            minatomi = eqatoms[minatomi]
+            assigned1[curratomi] = 1
+            assigned2[minatomi] = 1
+            matchedcoords1 = np.vstack((matchedcoords1, mol1.coords[curratomi]))
+            matchedcoords2 = np.vstack((matchedcoords2, mol2.coords[minatomi]))
+        return matchedcoords1, matchedcoords2

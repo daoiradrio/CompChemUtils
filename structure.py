@@ -1,8 +1,6 @@
 import os
-
 import numpy as np
-
-from chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple
+from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple
 
 
 
@@ -20,7 +18,10 @@ class Structure:
 
     def compute_structure(self, filepath: str) -> None:
         if not os.path.exists(filepath):
+            print()
+            print("****************** WARNING ********************")
             print("STRUCTURE MODULE: File not found at given path.")
+            print("***********************************************")
             return
         self.read_xyz(filepath)
         self.__compute_connectivity()
@@ -62,3 +63,10 @@ class Structure:
             elif d <= (double_bond + tol):
                 bond_order = 2
         return bond_order
+    
+
+    def write_xyz_file(self, filename):
+        with open(filename, "w") as xyzfile:
+            print(self.natoms, file=xyzfile, end="\n\n")
+            for elem, (x,y,z) in zip(self.elems, self.coords):
+                print(f"{elem}\t{x:18.10f}\t{y:18.10f}\t{z:18.10f}", file=xyzfile)
