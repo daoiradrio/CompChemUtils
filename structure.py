@@ -33,12 +33,12 @@ class Structure:
             elems = list(elems)
         self.elems = elems
         self.coords = coords
+        self.natoms = len(self.elems)
         self.__compute_connectivity()
 
 
     def read_xyz_file(self, filepath: str):
         self.elems = list(np.loadtxt(filepath, skiprows=2, usecols=0, dtype=str))
-        self.natoms = len(self.elems)
         self.coords = np.loadtxt(filepath, skiprows=2, usecols=(1,2,3))
         self.natoms = len(self.elems)
     

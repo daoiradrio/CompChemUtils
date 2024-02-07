@@ -115,7 +115,7 @@ class RMSD():
             for col, eqatomi in enumerate(eqatoms):
                 if assigned2[eqatomi]:
                     continue
-                d[:,col] = np.linalg.norm(matchedcoords1 - mol2.coords[eqatomi], axis=1)
+                d[:,col] = np.linalg.norm(matchedcoords2 - mol2.coords[eqatomi], axis=1)
             minatomi = np.argmin(np.linalg.norm(dref - d, axis=0))
             minatomi = eqatoms[minatomi]
             assigned1[curratomi] = 1
