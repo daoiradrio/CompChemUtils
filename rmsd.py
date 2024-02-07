@@ -11,10 +11,10 @@ class RMSD():
         pass
 
 
-    def rmsd(self, mol1: Structure, mol2: Structure) -> float:
-        Rmat = self.kabsch(mol1.coords, mol2.coords)
-        coords2 = np.dot(Rmat, mol2.coords.T).T
-        return np.sqrt(np.mean(np.linalg.norm(mol1.coords1 - coords2, axis=1)**2))
+    def rmsd(self, coords1: np.array, coords2: np.array) -> float:
+        Rmat = self.kabsch(coords, coords2)
+        coords2 = np.dot(Rmat, coords2.T).T
+        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
 
 
     def tight_rmsd(self, mol1: Structure, mol2: Structure) -> float:
