@@ -2,6 +2,7 @@ import os
 import numpy as np
 from typing import Union
 from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple
+from CompChemUtils.files import read_xyz_file, write_xyz_file
 
 
 
@@ -32,6 +33,7 @@ class Structure:
             print("****************** WARNING ********************")
             print("STRUCTURE MODULE: File not found at given path.")
             print("***********************************************")
+            print()
             return
         self.set_elems_coords_from_file(filepath)
         self.__compute_connectivity()
@@ -44,9 +46,7 @@ class Structure:
 
 
     def set_elems_coords_from_file(self, filepath: str) -> None:
-        self.elems = list(np.loadtxt(filepath, skiprows=2, usecols=0, dtype=str))
-        self.coords = np.loadtxt(filepath, skiprows=2, usecols=(1,2,3))
-        self.natoms = len(self.elems)
+        self.natoms, self.elems, self.coords = read_xyz_file(filepath)
     
 
     def __compute_connectivity(self) -> None:
@@ -82,9 +82,6 @@ class Structure:
         #        bond_order = 2
         return bond_order
     
-
-    def write_xyz_file(self, filename) -> None:
-        with open(filename, "w") as xyzfile:
-            print(self.natoms, file=xyzfile, end="\n\n")
-            for elem, (x,y,z) in zip(self.elems, self.coords):
-                print(f"{elem}\t{x:18.10f}\t{y:18.10f}\t{z:18.10f}", file=xyzfile)
+    
+    def write_structure_to_XYZ(self, filepath: str) -> None:
+        write_xyz_file(filepath, self.natoms, self.elems, self.coords)

@@ -14,18 +14,19 @@ class RMSD():
 
     def rmsd(self, coords1: np.array, coords2: np.array) -> float:
         Rmat = self.kabsch(coords1, coords2)
-        coords2 = np.dot(Rmat, coords2.T).T
+        coords2 = np.dot(Rmat, coords2)
         return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
 
 
     def tight_rmsd(self, mol1: Structure, mol2: Structure) -> float:
         coords1, coords2 = self.match_coords(mol1, mol2)
         Rmat = self.kabsch(coords1, coords2)
-        coords2 = np.dot(Rmat, coords2.T).T
+        coords2 = np.dot(Rmat, coords2)
         return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
         
 
-    def kabsch(self, coords1: np.array, coords2: np.array) -> tuple:
+    @staticmethod
+    def kabsch(coords1: np.array, coords2: np.array) -> tuple:
         center1 = np.mean(coords1, axis=0)
         center2 = np.mean(coords2, axis=0)
         coords1 -= center1
@@ -43,7 +44,7 @@ class RMSD():
             [0, 0, det]
         ])
         R = np.matmul(np.matmul(Vt.T, matrix), U.T)
-        return R.T
+        return R
 
 
     def __spheres(self, connectivity: dict, elems: list, firstatomi: int) -> list:
