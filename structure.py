@@ -17,27 +17,33 @@ class Structure:
             self.structure_from_xyzfile(filepath)
     
 
-    def structure_from_xyzfile(self, filepath: str) -> None:
-        if not os.path.exists(filepath):
-            print()
-            print("****************** WARNING ********************")
-            print("STRUCTURE MODULE: File not found at given path.")
-            print("***********************************************")
-            return
-        self.read_xyz_file(filepath)
-        self.__compute_connectivity()
-    
-
-    def comp_structure(self, elems: Union[list, np.array], coords: np.array):
+    def set_structure(self, elems: Union[list, np.array], coords: np.array) -> None:
         if not type(elems) == list:
             elems = list(elems)
         self.elems = elems
         self.coords = coords
         self.natoms = len(self.elems)
         self.__compute_connectivity()
+    
+
+    def set_structure_from_file(self, filepath: str) -> None:
+        if not os.path.exists(filepath):
+            print()
+            print("****************** WARNING ********************")
+            print("STRUCTURE MODULE: File not found at given path.")
+            print("***********************************************")
+            return
+        self.set_elems_coords_from_file(filepath)
+        self.__compute_connectivity()
+    
+
+    def set_elems_coords(self, elems: list, coords: np.array) -> None:
+        self.elems = elems
+        self.coords = coords
+        self.natoms = len(self.elems)
 
 
-    def read_xyz_file(self, filepath: str):
+    def set_elems_coords_from_file(self, filepath: str) -> None:
         self.elems = list(np.loadtxt(filepath, skiprows=2, usecols=0, dtype=str))
         self.coords = np.loadtxt(filepath, skiprows=2, usecols=(1,2,3))
         self.natoms = len(self.elems)
@@ -77,7 +83,7 @@ class Structure:
         return bond_order
     
 
-    def write_xyz_file(self, filename):
+    def write_xyz_file(self, filename) -> None:
         with open(filename, "w") as xyzfile:
             print(self.natoms, file=xyzfile, end="\n\n")
             for elem, (x,y,z) in zip(self.elems, self.coords):
