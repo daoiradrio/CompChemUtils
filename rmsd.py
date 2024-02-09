@@ -21,7 +21,7 @@ class RMSD:
     def tight_rmsd(self, mol1: Structure, mol2: Structure) -> float:
         coords1, coords2 = self.match_coords(mol1, mol2)
         Rmat = self.kabsch(coords1, coords2)
-        coords2 = np.dot(Rmat, coords2)
+        coords2 = np.dot(coords2, Rmat)
         return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
         
 
