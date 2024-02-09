@@ -2,6 +2,8 @@ import warnings
 import numpy as np
 from math import factorial
 from scipy.spatial.transform import Rotation as R
+from pymatgen.core.structure import Molecule
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 
 
 
@@ -10,7 +12,7 @@ from scipy.spatial.transform import Rotation as R
 
 
 
-class Rx():
+class Rx:
 
     def __init__(self, angle: float=None):
         self.mat = None
@@ -46,11 +48,11 @@ class Rx():
         if degrees:
             angle = np.deg2rad(angle)
         rotmat = R.from_rotvec(angle * np.array([1,0,0])).as_matrix()
-        return np.dot(rotmat, coord)
+        return np.dot(rotmat, vec)
 
 
 
-class Ry():
+class Ry:
 
     def __init__(self, angle: float=None):
         self.mat = None
@@ -86,11 +88,11 @@ class Ry():
         if degrees:
             angle = np.deg2rad(angle)
         rotmat = R.from_rotvec(angle * np.array([0,1,0])).as_matrix()
-        return np.dot(rotmat, coord)
+        return np.dot(rotmat, vec)
 
 
 
-class Rz():
+class Rz:
 
     def __init__(self, angle: float=None):
         self.mat = None
@@ -126,15 +128,17 @@ class Rz():
         if degrees:
             angle = np.deg2rad(angle)
         rotmat = R.from_rotvec(angle * np.array([0,0,1])).as_matrix()
-        return np.dot(rotmat, coord)
+        return np.dot(rotmat, vec)
 
 
 
-class Tesseral():
+class Tesseral:
 
     def __init__(self, l: int=None):
+        self.l = None
         self.mat = None
         if l != None:
+            self.l = l
             self.set_mat(l)
 
 
@@ -194,23 +198,29 @@ class Tesseral():
 
 
 
-class WignerD():
+class WignerD:
 
     def __init__(self, Rmat: np.array=None, l: int=None):
+        self.l = None
         self.mat = None
-        if Rmat != None and l != None:
+        self.tesseralmat = None
+        if l != None and Rmat.shape == (3,3):
+            self.l = l
             self.set_mat(Rmat, l)
+            self.set_tesseral_mat()
     
 
     def set_mat(self, Rmat: np.array, l: int) -> None:
+        self.l = l
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", "Gimbal lock detected. Setting third angle to zero since it is not possible to uniquely determine all angles.")
             alpha, beta, gamma = R.from_matrix(Rmat).as_euler("zyz")
         smallwigner = self.__compute_small_wigner(l, beta)
         ms = np.arange(-l, l+1)
-        expalpha = np.diag(np.exp(-1j * ms * alpha))
-        expgamma = np.diag(np.exp(-1j * ms * gamma))
-        self.mat = expgamma @ small_wignerd @ expalpha
+        # -1j or 1j ???
+        expalpha = np.diag(np.exp(1j * ms * alpha))
+        expgamma = np.diag(np.exp(1j * ms * gamma))
+        self.mat = expgamma @ smallwigner @ expalpha
     
 
     def get_mat(self) -> np.array:
@@ -223,6 +233,21 @@ class WignerD():
         return self.mat
     
 
+    def set_tesseral_mat(self) -> None:
+        Tmat = Tesseral.mat(self.l)
+        self.tesseralmat = np.real(Tmat @ self.mat @ Tmat.transpose().conjugate())
+
+
+    def get_tesseral_mat(self) -> np.array:
+        if self.tesseralmat == None:
+            print()
+            print("********************** WARNING ***********************")
+            print("WIGNER D MODULE: Tesseral Matrix has not yet been set.")
+            print("******************************************************")
+            print()
+        return self.tesseralmat
+    
+
     def __compute_small_wigner(self, l: int, beta: float) -> np.array:
         d = np.zeros((2*l+1, 2*l+1))
         for i, m1 in enumerate(range(-l, l+1)):
@@ -231,15 +256,15 @@ class WignerD():
         return d
 
     
-    def __compute_d_entry(l: int, m1: int, m2: int, beta: float) -> float:
+    def __compute_d_entry(self, l: int, m1: int, m2: int, beta: float) -> float:
         prefac = np.sqrt(
             factorial(l + m1) * factorial(l - m1) * factorial(l + m2) * factorial(l - m2)
         )
-        sum = 0.0
-        smin = min(0, m2-m1)
-        smax = max(l+m2, l-m1)
+        totsum = 0.0
+        smin = max(0, m2-m1)
+        smax = min(l+m2, l-m1)
         for s in range(smin, smax+1):
-            nom = (-1)**(m1 - m2 + s) * (np.cos(beta/2))**(2*l + m2 - m1 - 2*s) * (np.sin(beta/2))**(m1 - m2 + 2*s)
+            num = (-1)**(m1 - m2 + s) * (np.cos(beta/2))**(2*l + m2 - m1 - 2*s) * (np.sin(beta/2))**(m1 - m2 + 2*s)
             denom = factorial(l + m2 - s) * factorial(s) * factorial(m1 - m2 + s) * factorial(l - m1 - s)
-            sum += nom / denom
-        return prefac * sum
+            totsum += num / denom
+        return prefac * totsum
