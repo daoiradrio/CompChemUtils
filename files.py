@@ -21,4 +21,9 @@ def write_xyz_file(filepath: str, natoms: int, elems: list, coords: np.array) ->
 		print(natoms, file=xyzfile, end="\n\n")
 		for elem, (x,y,z) in zip(elems, coords):
 			print(f"{elem}\t{x:18.10f}\t{y:18.10f}\t{z:18.10f}", file=xyzfile)
+
+
+def write_file(filepath: str, contentstr: str) -> None:
+    with open(filepath, "w") as outfile:
+        print(contentstr, file=outfile)
     
