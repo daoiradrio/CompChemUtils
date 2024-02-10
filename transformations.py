@@ -9,6 +9,7 @@ from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 
 #TODO
 # - class templates for rotations, currently lots repetitions among Rx, Ry and Rz (vielleicht sogar für sämtliche Transformationen zusammen?)
+# - add block decomposition of DFTB Fock matrices into atomic (self) interaction blocks here?
 
 
 
@@ -218,8 +219,8 @@ class WignerD:
         smallwigner = self.__compute_small_wigner(l, beta)
         ms = np.arange(-l, l+1)
         # -1j or 1j ???
-        expalpha = np.diag(np.exp(1j * ms * alpha))
-        expgamma = np.diag(np.exp(1j * ms * gamma))
+        expalpha = np.diag(np.exp(-1j * ms * alpha))
+        expgamma = np.diag(np.exp(-1j * ms * gamma))
         self.mat = expgamma @ smallwigner @ expalpha
     
 
