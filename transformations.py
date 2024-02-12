@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from math import factorial
+from random import random
 from scipy.spatial.transform import Rotation as R
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer
@@ -11,6 +12,41 @@ from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 # - class templates for rotations, currently lots repetitions among Rx, Ry and Rz (vielleicht sogar für sämtliche Transformationen zusammen?)
 # - add block decomposition of DFTB Fock matrices into atomic (self) interaction blocks here?
 
+
+
+class Rxyz:
+
+    def __init__(self, xangle: float=None, yangle: float=None, zangle: float=None):
+        self.mat = None
+        self.xangle = xangle
+        self.yangle = yangle
+        self.zangle = zangle
+        if xangle and yangle and zangle:
+            self.set_mat()
+    
+
+    def set_mat(self) -> None:
+        self.mat = Rx.mat(self.xangle) @ Ry.mat(self.yangle) @ Rz.mat(self.zangle)
+    
+
+    @staticmethod
+    def align_vec_mat(refvec: np.array, vec: np.array) -> np.array:
+        angle = np.arccos(np.dot(refvec, vec))
+        if angle > 1e-8:
+            rotvec = np.cross(vec, refvec)
+            rotvec = rotvec / np.linalg.norm(rotvec)
+            r = R.from_rotvec(angle * rotvec)
+            return r.as_matrix()
+        else:
+            return np.identity(3)
+    
+
+    @staticmethod
+    def rand_rot(coords: np.array) -> np.array:
+        cx, cy, cz = np.random.choice(np.arange(-1, 1.0001, 0.0001), 3)
+        rotmat = Rx.mat(cx * np.pi) @ Ry.mat(cy * np.pi) @ Rz.mat(cz * np.pi)
+        return np.dot(rotmat, coords)
+    
 
 
 class Rx:
