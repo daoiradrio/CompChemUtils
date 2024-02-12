@@ -240,15 +240,14 @@ class WignerD:
     def __init__(self, Rmat: np.array=None, l: int=None):
         self.l = None
         self.mat = None
-        self.tesseralmat = None
+        self.tessmat = None 
         if l != None and Rmat.shape == (3,3):
             self.l = l
             self.set_mat(Rmat, l)
-            self.set_tesseral_mat()
+            self.set_tesseral_mat(l)
     
 
     def set_mat(self, Rmat: np.array, l: int) -> None:
-        self.l = l
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", "Gimbal lock detected. Setting third angle to zero since it is not possible to uniquely determine all angles.")
             alpha, beta, gamma = R.from_matrix(Rmat).as_euler("zyz")
@@ -270,9 +269,9 @@ class WignerD:
         return self.mat
     
 
-    def set_tesseral_mat(self) -> None:
-        Tmat = Tesseral.mat(self.l)
-        self.tesseralmat = np.real(Tmat @ self.mat @ Tmat.transpose().conjugate())
+    def set_tesseral_mat(self, l: int) -> None:
+        Tmat = Tesseral.mat(l)
+        self.tessmat = np.real(Tmat @ self.mat @ Tmat.transpose().conjugate())
 
 
     def get_tesseral_mat(self) -> np.array:

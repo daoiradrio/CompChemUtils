@@ -14,7 +14,7 @@ class RMSD:
 
     def rmsd(self, coords1: np.array, coords2: np.array) -> float:
         Rmat = self.kabsch(coords1, coords2)
-        coords2 = np.dot(Rmat, coords2)
+        coords2 = np.dot(coords2, Rmat)
         return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
 
 
