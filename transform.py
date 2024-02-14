@@ -3,8 +3,6 @@ import numpy as np
 from math import factorial
 from random import random
 from scipy.spatial.transform import Rotation as R
-from pymatgen.core.structure import Molecule
-from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 
 
 
