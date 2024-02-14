@@ -15,7 +15,7 @@ class Structure:
         # FIND BETTER DATASTRUCTURE FOR CONNECTIVITY
         self.bonds = None
         if filepath:
-            self.structure_from_xyzfile(filepath)
+            self.set_structure_from_xyzfile(filepath)
     
 
     def set_structure(self, elems: Union[list, np.array], coords: np.array) -> None:
@@ -27,7 +27,7 @@ class Structure:
         self.__compute_connectivity()
     
 
-    def set_structure_from_file(self, filepath: str) -> None:
+    def set_structure_from_xyzfile(self, filepath: str) -> None:
         if not os.path.exists(filepath):
             print()
             print("****************** WARNING ********************")
@@ -35,7 +35,7 @@ class Structure:
             print("***********************************************")
             print()
             return
-        self.set_elems_coords_from_file(filepath)
+        self.set_elems_coords_from_xyzfile(filepath)
         self.__compute_connectivity()
     
 
@@ -45,7 +45,7 @@ class Structure:
         self.natoms = len(self.elems)
 
 
-    def set_elems_coords_from_file(self, filepath: str) -> None:
+    def set_elems_coords_from_xyzfile(self, filepath: str) -> None:
         self.natoms, self.elems, self.coords = read_xyz_file(filepath)
     
 
