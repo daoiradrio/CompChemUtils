@@ -3,6 +3,7 @@ import numpy as np
 from math import factorial
 from random import random
 from scipy.spatial.transform import Rotation as R
+from CompChemUtils.chemdata import NAO, basis_trans_mats
 from CompChemUtils.visual import printmat
 
 
@@ -10,6 +11,71 @@ from CompChemUtils.visual import printmat
 #TODO
 # - class templates for rotations, currently lots repetitions among Rx, Ry and Rz (vielleicht sogar für sämtliche Transformationen zusammen?)
 # - add block decomposition of DFTB Fock matrices into atomic (self) interaction blocks here?
+
+
+
+class H:
+
+    def __init__(self):
+        pass
+
+    
+    @staticmethod
+    def orthogonalize_basis(H: np.array, S: np.array) -> np.array:
+        _, U = np.linalg.eig(S)
+        U = np.matrix(U)
+        s = np.matmul(U.H, np.matmul(S, U))
+        for i in range(n_mos):
+            s[i,i] = 1.0 / np.sqrt(s[i,i])
+        X = np.matmul(U, np.matmul(s, U.H))
+        Hortho = np.matmul(X, np.matmul(H, X))
+        return np.asarray(Hortho)
+    
+
+    @staticmethod
+    def _reorder_rose(H: np.array, CS12: np.array, basis_set: str, elems: list, atoms_order: list) -> np.array:
+        natoms = len(elems)
+        nao1 = sum([NAO[basis_set][elem] for elem in elems])
+        nmo2 = sum([NAO["SZ"][elem] for elem in elems])
+        entry_length_row = np.zeros(natoms)
+        entry_length_col = np.zeros(natoms)
+        for i, j in enumerate(atoms_order):
+            entry_length_row[i] = NAO["SZ"][elems[i]]
+            entry_length_col[i] = NAO[basis_set][elems[j-1]]
+        cumsum_row = np.cumsum(entry_length_row[:-1])
+        row_start_index = np.concatenate((np.array([0]), cumsum_row))
+        cumsum_col = np.cumsum(entry_length_col[:-1])
+        col_start_index_temp = np.concatenate((np.array([0]), cumsum_col))
+        col_start_index = [0] * natoms
+        for i, j in enumerate(atoms_order):
+            col_start_index[j - 1] = col_start_index_temp[i]
+
+        M = np.zeros((nmo2, nao1))
+
+        for i, elem in enumerate(elems):
+            vals = basis_trans_mats[basis_set][elem]
+            n, m = vals.shape
+            j = int(row_start_index[i])
+            k = int(col_start_index[i])
+            M[j:j+n, k:k+m] = vals
+
+        MCS12 = np.dot(M, CS12)
+
+        IAO_order = [-1] * nmo2
+        for i in range(nmo2):
+            max_j = 0
+            for j in range(1, nmo2):
+                if abs(MCS12[i][max_j]) < abs(MCS12[i][j]):
+                    max_j = j
+            IAO_order[i] = max_j
+
+        Hnew = np.zeros((nmo2,nmo2))
+
+        for i in range(nmo2):
+            for j in range(nmo2):
+                Hnew[i,j] = H[IAO_order[i],IAO_order[j]]
+        
+        return Hnew
 
 
 
