@@ -22,10 +22,11 @@ class H:
     
     @staticmethod
     def orthogonalize_basis(H: np.array, S: np.array) -> np.array:
+        nmos = S.shape[0]
         _, U = np.linalg.eig(S)
         U = np.matrix(U)
         s = np.matmul(U.H, np.matmul(S, U))
-        for i in range(n_mos):
+        for i in range(nmos):
             s[i,i] = 1.0 / np.sqrt(s[i,i])
         X = np.matmul(U, np.matmul(s, U.H))
         Hortho = np.matmul(X, np.matmul(H, X))
