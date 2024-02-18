@@ -14,6 +14,18 @@ from CompChemUtils.visual import printmat
 
 
 
+class Householder:
+
+    def __init__(self):
+        pass
+    
+    @staticmethod
+    def mat(n: np.array) -> np.array:
+        n = n / np.linalg.norm(n)
+        return np.identity(n.size) - 2*np.outer(n,n)
+
+
+
 class H:
 
     def __init__(self):
