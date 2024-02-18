@@ -23,14 +23,17 @@ def moments_of_inertia(elems: Union[list, np.array], coords: np.array) -> (np.ar
     mxy = 0.0
     mxz = 0.0
     myz = 0.0
-    for elem, (x,y,z) in zip(elems, coords):
+    totinertia = 0.0
+    for elem, coord in zip(elems, coords):
         m = M[elem]
+        x, y, z = coord
         mxy += m * x * y
         mxz += m * x * z
         myz += m * y * z
         mx2y2 += m * (x**2 + y**2)
         mx2z2 += m * (x**2 + z**2)
         my2z2 += m * (y**2 + z**2)
+        totinertia += m * np.dot(coord, coord)
     I = np.array([
         [my2z2, -mxy, -mxz],
         [-mxy, mx2z2, -myz],
@@ -38,4 +41,4 @@ def moments_of_inertia(elems: Union[list, np.array], coords: np.array) -> (np.ar
     ])
     eigvals, eigvecs = np.linalg.eig(I)
     sortids = np.argsort(eigvals)[::-1]
-    return eigvals[sortids], eigvecs[:,sortids]
+    return totinertia, eigvals[sortids] / totinertia, eigvecs[:,sortids]
