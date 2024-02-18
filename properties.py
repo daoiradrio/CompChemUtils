@@ -4,7 +4,18 @@ from CompChemUtils.chemdata import M
 
 
 
+def center_of_mass(elems: Union[list, np.array], coords: np.array) -> np.array:
+    com = np.array([0,0,0])
+    mtot = 0.0
+    for elem, coord in zip(elems, coords):
+        com = com + M[elem] * coord
+        mtot += M[elem]
+    return com / mtot
+    
+
+
 def moments_of_inertia(elems: Union[list, np.array], coords: np.array) -> (np.array, np.array):
+    coords = coords - center_of_mass(elems, coords)
     natoms = coords.shape[0]
     mx2y2 = 0.0
     mx2z2 = 0.0
