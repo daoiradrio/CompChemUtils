@@ -26,7 +26,7 @@ class Householder:
 
 
 
-class H:
+class Fock:
 
     def __init__(self):
         pass
@@ -124,6 +124,11 @@ class Rxyz:
         cx, cy, cz = np.random.choice(np.arange(-1, 1.0001, 0.0001), 3)
         rotmat = Rx.mat(cx * np.pi) @ Ry.mat(cy * np.pi) @ Rz.mat(cz * np.pi)
         return np.dot(rotmat, coords)
+    
+    @staticmethod
+    def rand_rot_mat() -> np.array:
+        cx, cy, cz = np.random.choice(np.arange(-1, 1.0001, 0.0001), 3)
+        return Rx.mat(cx * np.pi) @ Ry.mat(cy * np.pi) @ Rz.mat(cz * np.pi)
     
 
 
