@@ -5,6 +5,8 @@ from random import random
 from scipy.spatial.transform import Rotation as R
 from CompChemUtils.chemdata import NAO, basis_trans_mats
 from CompChemUtils.visual import printmat
+import quaternionic
+import spherical
 
 
 
@@ -42,7 +44,7 @@ class Fock:
             s[i,i] = 1.0 / np.sqrt(s[i,i])
         X = np.matmul(U, np.matmul(s, U.H))
         Hortho = np.matmul(X, np.matmul(H, X))
-        return np.asarray(Hortho)
+        return np.asarray(Hortho), X
     
 
     @staticmethod
@@ -300,8 +302,8 @@ class Tesseral:
         Tmat[l,l] = 1.0
         rfac = 1.0 / np.sqrt(2)
         ifac = 1j * rfac
-        for i, m1 in enumerate(range(-l, l+1)):
-            for j, m2 in enumerate(range(-l, l+1)):
+        for j, m1 in enumerate(range(-l, l+1)):
+            for i, m2 in enumerate(range(-l, l+1)):
                 if np.abs(m1) != np.abs(m2):
                     continue
                 if m1 < 0:
@@ -314,7 +316,7 @@ class Tesseral:
                         Tmat[i][j] = (-1)**m1 * rfac
                     elif m2 < 0:
                         Tmat[i][j] = rfac
-        return Tmat
+        return Tmat#.T
 
 
 
@@ -323,14 +325,26 @@ class WignerD:
     def __init__(self, Rmat: np.array=None, l: int=None):
         self.l = None
         self.mat = None
-        self.tessmat = None 
+        self.tessmat = None
+        self.p_can_to_cart = np.array([
+                [0,0,1],
+                [1,0,0],
+                [0,1,0]
+        ])
         if l != None and Rmat.shape == (3,3):
             self.l = l
-            self.set_mat(Rmat, l)
-            self.set_tesseral_mat(l)
+            self.set_mats(Rmat, l)
+            #self.mat = np.zeros((2*l+1, 2*l+1), dtype=np.complex128)
+            #Q = R.from_matrix(Rmat).as_quat()
+            #Robj = quaternionic.array(Q).normalized
+            #wigner = spherical.Wigner(ell_min=self.l, ell_max=self.l)
+            #Dmat = np.zeros((3,3), dtype=np.complex128)
+            #wigner.D(Robj, out=self.mat)
+            #self.set_tesseral_mat(l)
     
 
-    def set_mat(self, Rmat: np.array, l: int) -> None:
+    def set_mats(self, Rmat: np.array, l: int, to_cart: bool=True) -> None:
+        self.mat = np.zeros((2*l+1, 2*l+1), dtype=np.complex128)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", "Gimbal lock detected. Setting third angle to zero since it is not possible to uniquely determine all angles.")
             alpha, beta, gamma = R.from_matrix(Rmat).as_euler("zyz")
@@ -340,6 +354,7 @@ class WignerD:
         expalpha = np.diag(np.exp(-1j * ms * alpha))
         expgamma = np.diag(np.exp(-1j * ms * gamma))
         self.mat = expgamma @ smallwigner @ expalpha
+        self.set_tesseral_mat(l, to_cart)
     
 
     def get_mat(self) -> np.array:
@@ -352,9 +367,12 @@ class WignerD:
         return self.mat
     
 
-    def set_tesseral_mat(self, l: int) -> None:
+    def set_tesseral_mat(self, l: int, to_cart: bool=True) -> None:
         Tmat = Tesseral.mat(l)
-        self.tessmat = np.real(Tmat @ self.mat @ Tmat.transpose().conjugate())
+        self.tessmat = np.real(Tmat.T.transpose() @ self.mat @ Tmat)#.T.conjugate())
+        # CURRENTLY ONLY FOR L=1
+        if to_cart:
+            self.tessmat = self.p_can_to_cart @ self.tessmat @ self.p_can_to_cart.T
 
 
     def get_tesseral_mat(self) -> np.array:

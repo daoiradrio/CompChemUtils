@@ -11,7 +11,6 @@ def center_of_mass(elems: Union[list, np.array], coords: np.array) -> np.array:
 
 
 def moments_of_inertia(elems: Union[list, np.array], coords: np.array) -> (np.array, np.array):
-    coords = coords - center_of_mass(elems, coords)
     ms = np.array([M[elem] for elem in elems])
     totinertia = np.sum([m * np.dot(coord, coord) for m, coord in zip(ms, coords)])
     x, y, z = coords.T
