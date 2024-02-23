@@ -110,6 +110,11 @@ class Rxyz:
     
 
     @staticmethod
+    # PROBLEM IF DOT PRODUCT IS CLOSE TO 1 OR -1, MIGHT JUMP OUT OF DEFINITION DOMAIN OF 
+    # ARCCOS DUE TO MACHINE PRECISION
+    # IDEA:
+    # if dot product close to 1 (tolerance) then matrix=I
+    # else if close to -1 (tolerance) then rotation about vector orthogonal to refvec by angle pi
     def align_vec_mat(refvec: np.array, vec: np.array) -> np.array:
         angle = np.arccos(np.dot(refvec, vec))
         if angle > 1e-8:
@@ -294,7 +299,7 @@ class Tesseral:
             print("*********************************************")
             print()
         return self.mat
-    
+
 
     @staticmethod
     def mat(l: int) -> np.array:
@@ -302,8 +307,8 @@ class Tesseral:
         Tmat[l,l] = 1.0
         rfac = 1.0 / np.sqrt(2)
         ifac = 1j * rfac
-        for j, m1 in enumerate(range(-l, l+1)):
-            for i, m2 in enumerate(range(-l, l+1)):
+        for i, m1 in enumerate(range(-l, l+1)):
+            for j, m2 in enumerate(range(-l, l+1)):
                 if np.abs(m1) != np.abs(m2):
                     continue
                 if m1 < 0:
@@ -316,11 +321,11 @@ class Tesseral:
                         Tmat[i][j] = (-1)**m1 * rfac
                     elif m2 < 0:
                         Tmat[i][j] = rfac
-        return Tmat#.T
+        return Tmat
 
 
 
-class WignerD:
+class myWignerD:
 
     def __init__(self, Rmat: np.array=None, l: int=None):
         self.l = None
@@ -340,6 +345,7 @@ class WignerD:
             #wigner = spherical.Wigner(ell_min=self.l, ell_max=self.l)
             #Dmat = np.zeros((3,3), dtype=np.complex128)
             #wigner.D(Robj, out=self.mat)
+            #printmat(self.mat)
             #self.set_tesseral_mat(l)
     
 
@@ -347,13 +353,15 @@ class WignerD:
         self.mat = np.zeros((2*l+1, 2*l+1), dtype=np.complex128)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", "Gimbal lock detected. Setting third angle to zero since it is not possible to uniquely determine all angles.")
-            alpha, beta, gamma = R.from_matrix(Rmat).as_euler("zyz")
+            gamma, beta, alpha = R.from_matrix(Rmat).as_euler("zyz")
         smallwigner = self.__compute_small_wigner(l, beta)
         ms = np.arange(-l, l+1)
-        # -1j or 1j ???
         expalpha = np.diag(np.exp(-1j * ms * alpha))
         expgamma = np.diag(np.exp(-1j * ms * gamma))
-        self.mat = expgamma @ smallwigner @ expalpha
+        self.mat = expalpha @ smallwigner @ expgamma
+        #for i, m1 in enumerate(ms):
+        #    for j, m2 in enumerate(ms):
+        #        self.mat[i][j] = np.exp(-1j * m1 * alpha) * smallwigner[i,j] * np.exp(-1j * m2 * gamma)
         self.set_tesseral_mat(l, to_cart)
     
 
@@ -369,7 +377,7 @@ class WignerD:
 
     def set_tesseral_mat(self, l: int, to_cart: bool=True) -> None:
         Tmat = Tesseral.mat(l)
-        self.tessmat = np.real(Tmat.T.transpose() @ self.mat @ Tmat)#.T.conjugate())
+        self.tessmat = np.real(Tmat @ self.mat @ Tmat.conjugate().transpose())
         # CURRENTLY ONLY FOR L=1
         if to_cart:
             self.tessmat = self.p_can_to_cart @ self.tessmat @ self.p_can_to_cart.T
@@ -392,7 +400,7 @@ class WignerD:
                 d[i][j] = self.__compute_d_entry(l, m1, m2, beta)
         return d
 
-    
+    '''
     def __compute_d_entry(self, l: int, m1: int, m2: int, beta: float) -> float:
         prefac = np.sqrt(
             factorial(l + m1) * factorial(l - m1) * factorial(l + m2) * factorial(l - m2)
@@ -405,3 +413,19 @@ class WignerD:
             denom = factorial(l + m2 - s) * factorial(s) * factorial(m1 - m2 + s) * factorial(l - m1 - s)
             totsum += num / denom
         return prefac * totsum
+    '''
+    def __compute_d_entry(self, l, mp, m, beta):
+        prefac = np.sqrt(factorial(l-m)*factorial(l+m)*factorial(l-mp)*factorial(l+mp))
+        totsum = 0
+        smin = max(0, -m-mp)
+        smax = min(l-m, l-mp)
+        for s in range(smin, smax+1):
+            num = (-1)**l-m-s
+            num *= np.cos(beta/2)**(m+mp+2*s)
+            num *= np.sin(beta/2)**(l-mp-s)
+            denom = factorial(s)
+            denom *= factorial(l-mp-s)
+            denom *= factorial(m+mp+s)
+            denom *= factorial(l-m-s)
+            totsum += num/denom
+        return prefac*totsum

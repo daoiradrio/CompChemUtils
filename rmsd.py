@@ -11,20 +11,7 @@ class RMSD:
     def __init__(self):
         pass
 
-
-    def rmsd(self, coords1: np.array, coords2: np.array) -> float:
-        Rmat = self.kabsch(coords1, coords2)
-        coords2 = np.dot(coords2, Rmat)
-        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
-
-
-    def tight_rmsd(self, mol1: Structure, mol2: Structure) -> float:
-        coords1, coords2 = self.match_coords(mol1, mol2)
-        Rmat = self.kabsch(coords1, coords2)
-        coords2 = np.dot(coords2, Rmat)
-        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
-        
-
+    
     @staticmethod
     def kabsch(coords1: np.array, coords2: np.array) -> tuple:
         center1 = np.mean(coords1, axis=0)
@@ -45,6 +32,37 @@ class RMSD:
         ])
         R = np.matmul(np.matmul(Vt.T, matrix), U.T)
         return R
+
+
+    def rmsd(self, coords1: np.array, coords2: np.array) -> float:
+        Rmat = self.kabsch(coords1, coords2)
+        coords2 = np.dot(coords2, Rmat)
+        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
+    
+
+    def hungarian_rmsd(self, elems1: list, coords1: np.array, elems2: list, coords2: np.array) -> float:
+        natoms = len(coords1.shape[0])
+        costmat = np.zeros((n_atoms, n_atoms))
+        Rkabsch = kabsch(coords1, coords2)
+        coords2 = coords2 @ Rkabsch
+        for i in range(natoms):
+            for j in range(natoms):
+                elemterm = 0.0
+                if elems1[i] != elems2[j]:
+                    elemterm = 1000.0
+                diffvec = coords1[i] - coords2[j]
+                costval = np.dot(diffvec, diffvec) + elemterm
+                cost[i][j] = cost_value
+        row, col = linear_sum_assignment(cost)
+        coords1, coords2 = coords1[row], coords2[col]
+        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
+
+
+    def tight_rmsd(self, mol1: Structure, mol2: Structure) -> float:
+        coords1, coords2 = self.match_coords(mol1, mol2)
+        Rmat = self.kabsch(coords1, coords2)
+        coords2 = np.dot(coords2, Rmat)
+        return np.sqrt(np.mean(np.linalg.norm(coords1 - coords2, axis=1)**2))
 
 
     def __spheres(self, connectivity: dict, elems: list, firstatomi: int) -> list:

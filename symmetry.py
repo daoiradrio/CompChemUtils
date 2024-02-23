@@ -5,7 +5,7 @@ from CompChemUtils.properties import center_of_mass, moments_of_inertia
 
 
 
-def mirror_plane(elems: Union[list, np.array], coords: np.array, n: np.array, tol: float=0.1) -> int:
+def mirror_plane(elems: Union[list, np.array], coords: np.array, n: np.array, tol: float=0.5) -> int:
     M = Householder.mat(n)
     for elem1, coord1 in zip(elems, coords):
         mirrorcoord = np.dot(M, coord1)
