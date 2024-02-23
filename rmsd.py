@@ -1,6 +1,7 @@
 import numpy as np
 from queue import Queue
 from CompChemUtils.structure import Structure
+from scipy.optimize import linear_sum_assignment
 
 
 
