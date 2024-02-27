@@ -39,3 +39,12 @@ def right_handed(basis: np.array) -> bool:
     dot1 = np.dot(ref1, basis[:,1])
     dot2 = np.dot(ref2, basis[:,2])
     return (dot0 > 0) and (dot1 > 0) and (dot2 > 0)
+
+
+
+def pca(mat: np.array) -> np.array:
+    mat = mat - np.mean(mat, axis=0)
+    covmat = np.cov(mat)
+    eigvals, eigvecs = np.linalg.eig(covmat)
+    sortids = np.argsort(eigvals)[::-1]
+    return eigvals[sortids], eigvecs[:,sortids]
