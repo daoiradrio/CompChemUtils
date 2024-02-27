@@ -28,3 +28,14 @@ def moments_of_inertia(elems: Union[list, np.array], coords: np.array) -> (np.ar
     eigvals, eigvecs = np.linalg.eig(I)
     sortids = np.argsort(eigvals)[::-1]
     return totinertia, eigvals[sortids] / totinertia, eigvecs[:,sortids]
+
+
+
+def right_handed(basis: np.array) -> bool:
+    ref0 = np.cross(basis[:,1], basis[:,2])
+    ref1 = np.cross(basis[:,2], basis[:,0])
+    ref2 = np.cross(basis[:,0], basis[:,1])
+    dot0 = np.dot(ref0, basis[:,0])
+    dot1 = np.dot(ref1, basis[:,1])
+    dot2 = np.dot(ref2, basis[:,2])
+    return (dot0 > 0) and (dot1 > 0) and (dot2 > 0)

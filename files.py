@@ -16,9 +16,9 @@ def read_xyz_file(filepath: str) -> (int, list, np.array):
     return natoms, elems, coords
 
 
-def write_xyz_file(filepath: str, natoms: int, elems: list, coords: np.array) -> None:
+def write_xyz_file(filepath: str, elems: list, coords: np.array) -> None:
 	with open(filepath, "w") as xyzfile:
-		print(natoms, file=xyzfile, end="\n\n")
+		print(coords.shape[0], file=xyzfile, end="\n\n")
 		for elem, (x,y,z) in zip(elems, coords):
 			print(f"{elem}\t{x:18.10f}\t{y:18.10f}\t{z:18.10f}", file=xyzfile)
 
