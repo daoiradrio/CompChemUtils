@@ -44,7 +44,7 @@ def right_handed(basis: np.array) -> bool:
 
 def pca(mat: np.array) -> np.array:
     mat = mat - np.mean(mat, axis=0)
-    covmat = np.cov(mat)
+    covmat = np.cov(mat.T)
     eigvals, eigvecs = np.linalg.eig(covmat)
     sortids = np.argsort(eigvals)[::-1]
     return eigvals[sortids], eigvecs[:,sortids]
