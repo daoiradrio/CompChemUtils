@@ -87,68 +87,61 @@ def calc_multiple_dftb_HCS(elemslist: list, coordslist: list, orthogonalize: boo
 
 
 
-class ROSE:
+def reorder_rose_H(H: np.array, CS12: np.array, basis_set: str, elems: list, atoms_order: list) -> np.array:
+    natoms = len(elems)
+    nao1 = sum([NAO[basis_set][elem] for elem in elems])
+    nmo2 = sum([NAO["SZ"][elem] for elem in elems])
+    entry_length_row = np.zeros(natoms)
+    entry_length_col = np.zeros(natoms)
+    for i, j in enumerate(atoms_order):
+        entry_length_row[i] = NAO["SZ"][elems[i]]
+        entry_length_col[i] = NAO[basis_set][elems[j-1]]
+    cumsum_row = np.cumsum(entry_length_row[:-1])
+    row_start_index = np.concatenate((np.array([0]), cumsum_row))
+    cumsum_col = np.cumsum(entry_length_col[:-1])
+    col_start_index_temp = np.concatenate((np.array([0]), cumsum_col))
+    col_start_index = [0] * natoms
+    for i, j in enumerate(atoms_order):
+        col_start_index[j - 1] = col_start_index_temp[i]
 
-    def __init__(self):
-        pass
+    M = np.zeros((nmo2, nao1))
 
+    for i, elem in enumerate(elems):
+        vals = basis_trans_mats[basis_set][elem]
+        n, m = vals.shape
+        j = int(row_start_index[i])
+        k = int(col_start_index[i])
+        M[j:j+n, k:k+m] = vals
 
-    @staticmethod
-    def reorder_H(H: np.array, CS12: np.array, basis_set: str, elems: list, atoms_order: list) -> np.array:
-        natoms = len(elems)
-        nao1 = sum([NAO[basis_set][elem] for elem in elems])
-        nmo2 = sum([NAO["SZ"][elem] for elem in elems])
-        entry_length_row = np.zeros(natoms)
-        entry_length_col = np.zeros(natoms)
-        for i, j in enumerate(atoms_order):
-            entry_length_row[i] = NAO["SZ"][elems[i]]
-            entry_length_col[i] = NAO[basis_set][elems[j-1]]
-        cumsum_row = np.cumsum(entry_length_row[:-1])
-        row_start_index = np.concatenate((np.array([0]), cumsum_row))
-        cumsum_col = np.cumsum(entry_length_col[:-1])
-        col_start_index_temp = np.concatenate((np.array([0]), cumsum_col))
-        col_start_index = [0] * natoms
-        for i, j in enumerate(atoms_order):
-            col_start_index[j - 1] = col_start_index_temp[i]
+    MCS12 = np.dot(M, CS12)
 
-        M = np.zeros((nmo2, nao1))
+    IAO_order = [-1] * nmo2
+    for i in range(nmo2):
+        max_j = 0
+        for j in range(1, nmo2):
+            if abs(MCS12[i][max_j]) < abs(MCS12[i][j]):
+                max_j = j
+        IAO_order[i] = max_j
 
-        for i, elem in enumerate(elems):
-            vals = basis_trans_mats[basis_set][elem]
-            n, m = vals.shape
-            j = int(row_start_index[i])
-            k = int(col_start_index[i])
-            M[j:j+n, k:k+m] = vals
+    Hnew = np.zeros((nmo2,nmo2))
 
-        MCS12 = np.dot(M, CS12)
-
-        IAO_order = [-1] * nmo2
-        for i in range(nmo2):
-            max_j = 0
-            for j in range(1, nmo2):
-                if abs(MCS12[i][max_j]) < abs(MCS12[i][j]):
-                    max_j = j
-            IAO_order[i] = max_j
-
-        Hnew = np.zeros((nmo2,nmo2))
-
-        for i in range(nmo2):
-            for j in range(nmo2):
-                Hnew[i,j] = H[IAO_order[i],IAO_order[j]]
+    for i in range(nmo2):
+        for j in range(nmo2):
+            Hnew[i,j] = H[IAO_order[i],IAO_order[j]]
         
-        return Hnew
+    return Hnew
 
 
-    def get_H(rosepath: str) -> np.array:
-        roserkf = KFFile(rosepath)
-        data = roserkf.read_section("Data")
-        basis_set = data["Basis Set Type"]
-        atoms_order = data["Fragments and Atoms Order"]
-        natoms = len(atoms_order)
-        atoms_order = atoms_order[natoms:]
-        nao1 = data["nao1"]
-        nmo2 = data["nmo2"]
-        CS12 = np.array(data["C_S12"]).reshape((nao1, nmo2))
-        Hrose = np.array(data["IAO_Fock"]).reshape((nmo2, nmo2))
-        Hrose = reorder_rose(Hrose, CS12, basis_set, elems, atoms_order)
-        return Hrose
+def get_rose_H(rosepath: str) -> np.array:
+    roserkf = KFFile(rosepath)
+    data = roserkf.read_section("Data")
+    basis_set = data["Basis Set Type"]
+    atoms_order = data["Fragments and Atoms Order"]
+    natoms = len(atoms_order)
+    atoms_order = atoms_order[natoms:]
+    nao1 = data["nao1"]
+    nmo2 = data["nmo2"]
+    CS12 = np.array(data["C_S12"]).reshape((nao1, nmo2))
+    Hrose = np.array(data["IAO_Fock"]).reshape((nmo2, nmo2))
+    Hrose = reorder_rose(Hrose, CS12, basis_set, elems, atoms_order)
+    return Hrose
