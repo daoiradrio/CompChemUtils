@@ -90,11 +90,11 @@ def calc_multiple_dftb_HCS(elemslist: list, coordslist: list, orthogonalize: boo
 def reorder_rose_H(H: np.array, CS12: np.array, basis_set: str, elems: list, atoms_order: list) -> np.array:
     natoms = len(elems)
     nao1 = sum([NAO[basis_set][elem] for elem in elems])
-    nmo2 = sum([NAO["SZ"][elem] for elem in elems])
+    nmo2 = sum([NAO_minimal_valence[elem] for elem in elems])
     entry_length_row = np.zeros(natoms)
     entry_length_col = np.zeros(natoms)
     for i, j in enumerate(atoms_order):
-        entry_length_row[i] = NAO["SZ"][elems[i]]
+        entry_length_row[i] = NAO_minimal_valence[elems[i]]
         entry_length_col[i] = NAO[basis_set][elems[j-1]]
     cumsum_row = np.cumsum(entry_length_row[:-1])
     row_start_index = np.concatenate((np.array([0]), cumsum_row))

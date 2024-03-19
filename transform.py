@@ -3,8 +3,6 @@ import numpy as np
 from math import factorial
 from random import random
 from scipy.spatial.transform import Rotation as R
-from CompChemUtils.chemdata import NAO, basis_trans_mats
-from CompChemUtils.visual import printmat
 import quaternionic
 import spherical
 
@@ -36,6 +34,7 @@ class Fock:
     
     @staticmethod
     def orthogonalize_basis(H: np.array, S: np.array) -> (np.array, np.array):
+        '''
         nmos = S.shape[0]
         _, U = np.linalg.eig(S)
         U = np.matrix(U)
@@ -45,6 +44,15 @@ class Fock:
         X = np.matmul(U, np.matmul(s, U.H))
         Hortho = np.matmul(X, np.matmul(H, X))
         return np.asarray(Hortho), X
+        '''
+        nmos = S.shape[0]
+        _, U = np.linalg.eig(S)
+        s = np.dot(U.transpose().conjugate(), np.dot(S, U))
+        for i in range(nmos):
+            s[i][i] = 1.0 / np.sqrt(s[i][i])
+        X = np.dot(U, np.dot(s, U.transpose().conjugate()))
+        Hortho = np.dot(U, np.dot(H, X))
+        return H, X
 
 
 
