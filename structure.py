@@ -46,8 +46,12 @@ class Structure:
             print()
             return
         if as_matrix:
+            if self.bond_mat not None:
+                self.mat = None
             self.__compute_graph_as_matrix()
         else:
+            if self.bond_dict is not None:
+                self.bond_dict = None
             self.__compute_graph_as_dict()
 
 
