@@ -26,7 +26,7 @@ class Householder:
 
 
 
-class Fock:
+class Hamiltonian:
 
     def __init__(self):
         pass
@@ -77,9 +77,15 @@ class Rxyz:
     # IDEA:
     # if dot product close to 1 (tolerance) then matrix=I
     # else if close to -1 (tolerance) then rotation about vector orthogonal to refvec by angle pi
-    def align_vec_mat(refvec: np.array, vec: np.array) -> np.array:
-        angle = np.arccos(np.dot(refvec, vec))
-        if angle > 1e-8:
+    def align_vec_mat(refvec: np.array, vec: np.array, tol: float=1e-8) -> np.array:
+        dotprod = np.dot(refvec, vec)
+        if dotprod >= 1+tol:
+            dotprod = 1
+        elif dotprod <= -1-tol:
+            dotprod = -1
+        else:
+            angle = np.arccos(dotprod)
+        if angle > tol:
             rotvec = np.cross(vec, refvec)
             rotvec = rotvec / np.linalg.norm(rotvec)
             r = R.from_rotvec(angle * rotvec)

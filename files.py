@@ -9,6 +9,7 @@ def read_xyz_file(filepath: str) -> (int, list, np.array):
         print("*********** ERROR ***********")
         print("File not found at given path.")
         print("*****************************")
+        print()
         return None
     elems = list(np.loadtxt(filepath, skiprows=2, usecols=0, dtype=str))
     coords = np.loadtxt(filepath, skiprows=2, usecols=(1,2,3))

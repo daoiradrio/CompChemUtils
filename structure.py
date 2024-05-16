@@ -15,10 +15,10 @@ class Structure:
         self.bond_dict = None
         self.bond_mat = None # STORE ONLY UPPER OR LOWER TRIANGLE AND IMPLEMENT HASH FUNCTION
         if filepath:
-            self.set_structure_from_xyzfile(filepath)
+            self.set_structure_from_xyz_file(filepath)
     
 
-    def set_elems_and_coords(elems: Union[list, np.array], coords: np.array):
+    def set_elems_and_coords(self, elems: Union[list, np.array], coords: np.array) -> None:
         if not type(elems) == list:
             elems = list(elems)
         self.elems = elems
@@ -46,7 +46,7 @@ class Structure:
             print()
             return
         if as_matrix:
-            if self.bond_mat not None:
+            if self.bond_mat is not None:
                 self.mat = None
             self.__compute_graph_as_matrix()
         else:
@@ -87,7 +87,7 @@ class Structure:
         for i in range(self.natoms):
             self.bond_mat[i][i] = i
             for j in range(i+1, self.natoms):
-                bond_order = __compute_bond_order(
+                bond_order = self.__compute_bond_order(
                     self.elems[i],
                     self.coords[i],
                     self.elems[j],
