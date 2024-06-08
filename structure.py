@@ -126,3 +126,20 @@ class Structure:
         elif d <= single_bond + tol:
             bond_order = 1
         return bond_order
+    
+
+    @staticmethod
+    def get_molecular_graph(elems, coords):
+        tol = 0.08
+        bond_idx = []
+        bond_dist = []
+        for i, elem1 in enumerate(elems):
+            coord1 = coords[i]
+            for j, elem2 in enumerate(elems[:i]):
+                coord2 = coords[j]
+                d = np.linalg.norm(coord1 - coord2)
+                d_bond = covalence_radii_single[elem1] + covalence_radii_single[elem2]
+                if d <= d_bond + tol:
+                    bond_idx.append([i,j])
+                    bond_dist.append(d)
+        return bond_idx, bond_dist
