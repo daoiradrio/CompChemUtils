@@ -1,1 +1,1 @@
-# CompChemUtils
+My private utility repository for convenience containing frequently needed functionality, e.g. interacting with XYZ files.

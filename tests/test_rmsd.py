@@ -1,5 +1,4 @@
 import os
-from CompChemUtils.structure import Structure
 from CompChemUtils.rmsd import RMSD
 
 

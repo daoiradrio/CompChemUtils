@@ -2,11 +2,6 @@ import numpy as np
 from queue import Queue
 from CompChemUtils.structure import Structure
 from scipy.optimize import linear_sum_assignment
-from CompChemUtils.symmetry import mirror_plane
-from CompChemUtils.properties import moments_of_inertia, center_of_mass
-from CompChemUtils.chemdata import M
-from CompChemUtils.transform import Rxyz
-from CompChemUtils.files import read_xyz_file
 
 
 
@@ -108,8 +103,8 @@ class RMSD:
 
     def match_coords(self, mol1: Structure, mol2: Structure) -> tuple:
         pairs = {}
-        assigned1 = [0] * mol1.natoms
-        assigned2 = [0] * mol2.natoms
+        assigned1 = [0 for _ in range(mol1.natoms)]
+        assigned2 = [0 for _ in range(mol2.natoms)]
         matchedcoords1 = []
         matchedcoords2 = []
         spheres1 = {atomi: self.__spheres(mol1.bond_dict, mol1.elems, atomi) for atomi in range(mol1.natoms)}
@@ -130,9 +125,9 @@ class RMSD:
                 assigned2[eqs[0]] = 1
             else:
                 print()
-                print("***************** WARNING *******************")
+                print("***************** WARNING ******************")
                 print("RMSD MODULE: Molecules seem to be different.")
-                print("*********************************************")
+                print("********************************************")
                 print()
                 return mol1.coords, mol2.coords
         matchedcoords1 = np.array(matchedcoords1)
@@ -156,86 +151,3 @@ class RMSD:
             matchedcoords1 = np.vstack((matchedcoords1, mol1.coords[curratomi]))
             matchedcoords2 = np.vstack((matchedcoords2, mol2.coords[minatomi]))
         return matchedcoords1, matchedcoords2
-
-
-# TESTING NEW APPROACH BASED ON ALIGNING PRINCIPAL AXES OF INERTIA BEFORE APPLYING HUNGARIAN RMSD:
-
-
-    def __check_mirror_planes(self, elems: list, coords: np.array, basis: np.array) -> np.array:
-        planes = [0,0,0]
-        for i in range(3):
-            ax = basis[:,i]
-            planes[i] = mirror_plane(elems, coords, ax)
-        return np.array(planes)
-
-
-    def __sym_unique_moi_basis(self, elems: list, coords: np.array) -> np.array:
-        center = center_of_mass(elems, coords)
-        coords -= center
-        _, _, moibasis = moments_of_inertia(elems, coords)
-        
-        planes = self.__check_mirror_planes(elems, coords, moibasis)
-        nzero = planes.size - np.count_nonzero(planes)
-        transformed_coords = np.dot(coords, moibasis)
-
-        if nzero == 1:
-            idx = np.where(planes == 0)[0][0]
-            msumpos = 0.0
-            msumneg = 0.0
-            for i, coord in enumerate(transformed_coords):
-                if coord[idx] < 0:
-                    msumneg += M[elems[i]]
-                else:
-                    msumpos += M[elems[i]]
-            if msumpos < msumneg:
-                moibasis[:,idx] *= -1
-        elif nzero == 2:
-            idx = np.where(planes == 0)[0]
-            for i in idx:
-                msumpos = 0
-                msumneg = 0
-                for j, coord in enumerate(transformed_coords):
-                    if coord[i] < 0:
-                        msumneg += M[elems[j]]
-                    else:
-                        msumpos += M[elems[j]]
-                if msumpos < msumneg:
-                    moibasis[:,i] *= -1
-        elif nzero == 3:
-            idx = np.where(planes == 0)[0]
-            for i in idx[:-1]:
-                msumpos = 0
-                msumneg = 0
-                for j, coord in enumerate(transformed_coords):
-                    if coord[i] < 0:
-                        msumneg += M[elems[j]]
-                    else:
-                        msumpos += M[elems[j]]
-                if msumpos < msumneg:
-                    moibasis[:,i] *= -1
-        
-        return moibasis
-
-
-    def __align_structures(self, basis1: np.array, coords1: np.array, basis2: np.array, coords2: np.array) -> tuple:
-        for i in range(2):
-            refvec = basis1[:,i]
-            vec = basis2[:,i]
-            Rmat = Rxyz.align_vec_mat(refvec, vec)
-            basis2 = np.dot(Rmat, basis2)
-            coords2 = np.dot(Rmat, coords2.T).T
-        return basis2, coords2
-    
-
-    def moi_based_rmsd(self, file1: str, file2: str) -> float:
-        # read in XYZ information
-        _, elems1, coords1 = read_xyz_file(file1)
-        _, elems2, coords2 = read_xyz_file(file2)
-        # compute reference basis
-        ref_basis = self.__sym_unique_moi_basis(elems1, coords2)
-        # compute other basis
-        basis = self.__sym_unique_moi_basis(elems2, coords2)
-        # align both molecular structures by aligning reference basis and other basis
-        _, coords2 = self.__align_structures(ref_basis, coords1, basis, coords2)
-        # apply Hungarian-based RMSD
-        return self.hungarian_rmsd(elems1, coords1, elems2, coords2)

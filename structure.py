@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from typing import Union
-from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple
+from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple, M, element_symbols
 from CompChemUtils.files import read_xyz_file
 
 
@@ -14,6 +14,7 @@ class Structure:
         self.coords = None
         self.bond_dict = None
         self.bond_mat = None # STORE ONLY UPPER OR LOWER TRIANGLE AND IMPLEMENT HASH FUNCTION
+        self.center_of_mass = None
         if filepath:
             self.set_structure_from_xyz_file(filepath)
     
@@ -48,11 +49,11 @@ class Structure:
         if as_matrix:
             if self.bond_mat is not None:
                 self.mat = None
-            self.__compute_graph_as_matrix()
+            self._compute_graph_as_matrix()
         else:
             if self.bond_dict is not None:
                 self.bond_dict = None
-            self.__compute_graph_as_dict()
+            self._compute_graph_as_dict()
 
 
     def set_structure(self, elems: Union[list, np.array], coords: np.array, as_matrix: bool=True) -> None:
@@ -62,13 +63,13 @@ class Structure:
         self.coords = coords
         self.natoms = len(self.elems)
         if as_matrix:
-            self.__compute_graph_as_matrix()
+            self._compute_graph_as_matrix()
         else:
-            self.__compute_graph_as_dict()
+            self._compute_graph_as_dict()
     
 
     def set_structure_from_xyz_file(self, filepath: str, as_matrix: bool=True) -> None:
-        if not os.path.exists(filepath):
+        if not os.path.isfile(filepath):
             print()
             print("****************** WARNING ********************")
             print("STRUCTURE MODULE: File not found at given path.")
@@ -77,12 +78,12 @@ class Structure:
             return
         self.natoms, self.elems, self.coords = read_xyz_file(filepath)
         if as_matrix:
-            self.__compute_graph_as_matrix()
+            self._compute_graph_as_matrix()
         else:
-            self.__compute_graph_as_dict()
+            self._compute_graph_as_dict()
     
 
-    def __compute_graph_as_matrix(self) -> None:
+    def _compute_graph_as_matrix(self) -> None:
         self.bond_mat = np.zeros((self.natoms, self.natoms))
         for i in range(self.natoms):
             self.bond_mat[i][i] = i
@@ -97,11 +98,11 @@ class Structure:
                 self.bond_mat[j][i] = bond_order
     
 
-    def __compute_graph_as_dict(self) -> None:
+    def _compute_graph_as_dict(self) -> None:
         self.bond_dict = {i: [] for i in range(self.natoms)}
         for i in range(self.natoms):
             for j in range(i+1, self.natoms):
-                bond_order = self.__compute_bond_order(
+                bond_order = self._compute_bond_order(
                     self.elems[i],
                     self.coords[i],
                     self.elems[j],
@@ -112,7 +113,7 @@ class Structure:
                     self.bond_dict[j].append(i)
     
 
-    def __compute_bond_order(self, elem1: str, coord1: np.array, elem2: str, coord2: np.array) -> int:
+    def _compute_bond_order(self, elem1: str, coord1: np.array, elem2: str, coord2: np.array) -> int:
         tol = 0.08
         bond_order = 0
         d = np.linalg.norm(coord1 - coord2)
@@ -128,18 +129,47 @@ class Structure:
         return bond_order
     
 
+    '''
     @staticmethod
     def get_molecular_graph(elems, coords):
         tol = 0.08
-        bond_idx = []
-        bond_dist = []
+        bond_ids = []
+        bond_len = []
         for i, elem1 in enumerate(elems):
             coord1 = coords[i]
-            for j, elem2 in enumerate(elems[:i]):
+            for j, elem2 in enumerate(elems):
                 coord2 = coords[j]
                 d = np.linalg.norm(coord1 - coord2)
                 d_bond = covalence_radii_single[elem1] + covalence_radii_single[elem2]
                 if d <= d_bond + tol:
-                    bond_idx.append([i,j])
-                    bond_dist.append(d)
-        return bond_idx, bond_dist
+                    bond_ids.append([i,j])
+                    bond_len.append(d)
+        return bond_ids, bond_len
+    '''
+    @staticmethod
+    def get_molecular_graph(Z, R):
+        tol = 0.08
+        dst_idx = []
+        src_idx = []
+        bond_lens = []
+        for i, Z1 in enumerate(Z):
+            elem1 = element_symbols[Z1]
+            coord1 = R[i]
+            for j, Z2 in enumerate(Z):
+                if i == j:
+                    continue
+                elem2 = element_symbols[Z2]
+                coord2 = R[j]
+                d = np.linalg.norm(coord1 - coord2)
+                d_bond = covalence_radii_single[elem1] + covalence_radii_single[elem2]
+                if d <= d_bond + tol:
+                    #bond_ids.append([i,j])
+                    dst_idx.append(i)
+                    src_idx.append(j)
+                    bond_lens.append(d)
+        return np.array(dst_idx), np.array(src_idx), np.array(bond_lens)
+
+
+    def set_center_of_mass(self) -> None:
+        ms = np.array([M[elem] for elem in self.elems])
+        self.center_of_mass = np.einsum("i, ij -> j", ms, self.coords) / np.sum(ms)

@@ -4,7 +4,7 @@ import numpy as np
 
 
 def read_xyz_file(filepath: str) -> (int, list, np.array):
-    if not os.path.exists(filepath):
+    if not os.path.isfile(filepath):
         print()
         print("*********** ERROR ***********")
         print("File not found at given path.")
