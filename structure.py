@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from typing import Union
-from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple, M, element_symbols
+from CompChemUtils.chemdata import covalence_radii_single, covalence_radii_double, covalence_radii_triple, element_symbols, atomic_masses
 from CompChemUtils.files import read_xyz_file
 
 
@@ -113,7 +113,7 @@ class Structure:
                     self.bond_dict[j].append(i)
     
 
-    def _compute_bond_order(self, elem1: str, coord1: np.array, elem2: str, coord2: np.array) -> int:
+    def __compute_bond_order(self, elem1: str, coord1: np.array, elem2: str, coord2: np.array) -> int:
         tol = 0.08
         bond_order = 0
         d = np.linalg.norm(coord1 - coord2)
@@ -129,23 +129,6 @@ class Structure:
         return bond_order
     
 
-    '''
-    @staticmethod
-    def get_molecular_graph(elems, coords):
-        tol = 0.08
-        bond_ids = []
-        bond_len = []
-        for i, elem1 in enumerate(elems):
-            coord1 = coords[i]
-            for j, elem2 in enumerate(elems):
-                coord2 = coords[j]
-                d = np.linalg.norm(coord1 - coord2)
-                d_bond = covalence_radii_single[elem1] + covalence_radii_single[elem2]
-                if d <= d_bond + tol:
-                    bond_ids.append([i,j])
-                    bond_len.append(d)
-        return bond_ids, bond_len
-    '''
     @staticmethod
     def get_molecular_graph(Z, R):
         tol = 0.08
@@ -163,7 +146,6 @@ class Structure:
                 d = np.linalg.norm(coord1 - coord2)
                 d_bond = covalence_radii_single[elem1] + covalence_radii_single[elem2]
                 if d <= d_bond + tol:
-                    #bond_ids.append([i,j])
                     dst_idx.append(i)
                     src_idx.append(j)
                     bond_lens.append(d)
@@ -171,5 +153,5 @@ class Structure:
 
 
     def set_center_of_mass(self) -> None:
-        ms = np.array([M[elem] for elem in self.elems])
+        ms = np.array([atomic_masses[elem] for elem in self.elems])
         self.center_of_mass = np.einsum("i, ij -> j", ms, self.coords) / np.sum(ms)
