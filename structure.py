@@ -84,9 +84,9 @@ class Structure:
     
 
     def _compute_graph_as_matrix(self) -> None:
-        self.bond_mat = np.zeros((self.natoms, self.natoms))
+        self.bond_mat = np.zeros((self.natoms, self.natoms), dtype=int)
         for i in range(self.natoms):
-            self.bond_mat[i][i] = i
+            self.bond_mat[i][i] = 0
             for j in range(i+1, self.natoms):
                 bond_order = self.__compute_bond_order(
                     self.elems[i],
