@@ -1,1 +1,1 @@
-Private utility repository containing frequently required functionality, e.g. interacting with XYZ files.
+Utility repository containing functionality I frequently use, e.g. interacting with XYZ files.
